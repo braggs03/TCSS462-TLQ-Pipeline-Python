@@ -21,13 +21,7 @@ class Inspector:
         # You can add more detailed system inspection logic here
         self._initial_metrics = {
             'start_time': self._start_time,
-            'memory_usage': self._get_memory_usage()
         }
-
-    def _get_memory_usage(self):
-        """Get current memory usage (placeholder)"""
-        import psutil
-        return psutil.Process().memory_info().rss / 1024 / 1024  # MB
 
     def addAttribute(self, key: str, value: Any):
         """Add a custom attribute to the inspection report"""
@@ -37,7 +31,6 @@ class Inspector:
         """Capture final system metrics and calculate deltas"""
         self._final_metrics = {
             'end_time': time.time(),
-            'memory_usage': self._get_memory_usage(),
             'execution_time': time.time() - self._start_time
         }
 
@@ -54,7 +47,7 @@ class Inspector:
 API_KEY = os.environ.get('OPENCAGE_API_KEY', 'e6bc8eff15f74c6d928a897a0264635f')
 PUT_BUCKET = "load.tlq"
 RECURRING_CITIES_BUCKET = "recurring-cities.tlq"
-RECURRING_CITIES_FILENAME = "recurring-cities.pkl"
+RECURRING_CITIES_FILENAME = "recurring-cities"
 
 
 def transform_row(record: list, recurring_cities: Dict[str, tuple]) -> list:
@@ -79,8 +72,9 @@ def transform_row(record: list, recurring_cities: Dict[str, tuple]) -> list:
             response = requests.get(
                 f"https://api.opencagedata.com/geocode/v1/json?q={user_city}&key={API_KEY}&limit=1"
             ).json()
-            result_state = response['results'][0]['components'].get('state', 'N/A')
-            result_country = response['results'][0]['components'].get('country', 'N/A')
+            print(f"https://api.opencagedata.com/geocode/v1/json?q={user_city}&key={API_KEY}&limit=1")
+            result_state = response['results'][0]['components']['state']
+            result_country = response['results'][0]['components']['country']
             recurring_cities[user_city] = (result_state, result_country)
         except Exception as e:
             logging.error(f"Geocoding error for city {user_city}: {e}")
@@ -110,7 +104,9 @@ def lambda_handler(event: Dict[str, Any], context: Any):
     try:
         # Determine input file details
         bucket_name = event['detail']['requestParameters']['bucketName']
+        print(bucket_name)
         file_name = event['detail']['requestParameters']['key']
+        print(file_name)
         tmp_file = f"/tmp/{file_name}"
         transformed_file = f"/tmp/transformed_{file_name}"
 
@@ -119,10 +115,6 @@ def lambda_handler(event: Dict[str, Any], context: Any):
 
         # Load recurring cities cache
         recurring_cities = {}
-        if s3.list_objects_v2(Bucket=RECURRING_CITIES_BUCKET, Prefix=RECURRING_CITIES_FILENAME).get('KeyCount', 0):
-            s3.download_file(RECURRING_CITIES_BUCKET, RECURRING_CITIES_FILENAME, '/tmp/' + RECURRING_CITIES_FILENAME)
-            with open('/tmp/' + RECURRING_CITIES_FILENAME, 'rb') as f:
-                recurring_cities = pickle.load(f)
 
         # Transform data
         with open(tmp_file, 'r') as infile, open(transformed_file, 'w', newline='') as outfile:
