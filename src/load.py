@@ -46,6 +46,7 @@ def lambda_handler(event, context):
     connection.commit()
 
     # Insert data
+    int row_count = 0
     insert_sql = """
     INSERT INTO data (
         userAge, userGender, userNumberOfApps, userSocialMediaUsage, 
@@ -55,11 +56,13 @@ def lambda_handler(event, context):
         resultState, resultCountry
     ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
     """
+
     with open(tmp_file, 'r') as csvfile:
         reader = csv.reader(csvfile)
-        next(reader)  # Skip header
-        for row in reader:
-            cursor.execute(insert_sql, row)
+        next(reader, None)  # Skip header
+        rows = [tuple(row) for row in csv_reader]
+        cursor.executemany(insert_query, rows)
+
     connection.commit()
 
     return {"status": "data loaded successfully"}
