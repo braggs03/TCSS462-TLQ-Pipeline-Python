@@ -45,8 +45,8 @@ def lambda_handler(event, context):
     cursor.execute(create_table_sql)
     connection.commit()
 
+    BATCHSIZE = 1000;
     # Insert data
-    int row_count = 0
     insert_sql = """
     INSERT INTO data (
         userAge, userGender, userNumberOfApps, userSocialMediaUsage, 
@@ -60,8 +60,13 @@ def lambda_handler(event, context):
     with open(tmp_file, 'r') as csvfile:
         reader = csv.reader(csvfile)
         next(reader, None)  # Skip header
-        rows = [tuple(row) for row in csv_reader]
-        cursor.executemany(insert_query, rows)
+        rows = [tuple(row) for row in reader]
+
+        # Process rows in batches
+        for i in range(0, len(rows), BATCHSIZE):
+            batch = rows[i:i + BATCHSIZE]
+            cursor.executemany(insert_sql, batch)
+            connection.commit()  # Commit after each batch
 
     connection.commit()
 
