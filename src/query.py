@@ -14,6 +14,11 @@ def lambda_handler(event, context):
 
     query = "SELECT "
     aggregations = event.get("aggregations", [])
+    group_by = event.get("group", [])
+
+    if group_by:
+        query += "".join(group_by)
+
     if aggregations:
         query += ", ".join([f"{agg['function']}({agg['column']}) AS {agg['function']}_{agg['column']}" for agg in aggregations])
     else:
