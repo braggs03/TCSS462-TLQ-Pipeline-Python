@@ -57,7 +57,12 @@ def lambda_handler(event, context):
     with open(tmp_file, 'r') as csvfile:
         reader = csv.reader(csvfile)
         rows = [tuple(row) for row in reader]
-        cursor.executemany(insert_sql, rows)
+
+        # Process rows in batches
+        for i in range(0, len(rows), BATCHSIZE):
+            batch = rows[i:i + BATCHSIZE]
+            cursor.executemany(insert_sql, batch)
+            connection.commit()  # Commit after each batch
 
     connection.commit()
 
