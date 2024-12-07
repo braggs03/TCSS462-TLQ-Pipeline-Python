@@ -1,6 +1,6 @@
 import boto3
 import csv
-import pymysql
+import mysql.connector
 
 def lambda_handler(event, context):
     s3 = boto3.client('s3')
@@ -8,44 +8,41 @@ def lambda_handler(event, context):
     file_name = event['detail']['requestParameters']['key']
     tmp_file = f"/tmp/{file_name}"
 
-    # Load database connection details
-    db_config = {
-        "host": "your-db-host",
-        "user": "your-username",
-        "password": "your-password",
-        "database": "mobiledata"
-    }
-
     # Download file from S3
     s3.download_file(bucket_name, file_name, tmp_file)
 
     # Connect to Aurora database
-    connection = pymysql.connect(**db_config)
+    connection = mysql.connector.connect(
+        host="tql-db.cluster-c5oescyqc3zg.us-east-1.rds.amazonaws.com", 
+        port=3306,
+        user="admin",
+        password="smLe14KRN9X7SoT3Y36V",
+        database="mobiledata"
+    )
     cursor = connection.cursor()
 
     # Check/Create table
     create_table_sql = """
     CREATE TABLE IF NOT EXISTS data (
-        userID INT AUTO_INCREMENT PRIMARY KEY,
-        userAge INT,
-        userGender VARCHAR(10),
-        userNumberOfApps INT,
-        userSocialMediaUsage FLOAT,
-        userPercentOfSocialMedia FLOAT,
-        userProductivityAppUsage FLOAT,
-        userPercentOfProductivityAppUsage FLOAT,
-        userGamingAppUsage FLOAT,
-        userPercentOfGamingAppUsage FLOAT,
-        userTotalAppUsage FLOAT,
-        userCity VARCHAR(100),
-        resultState VARCHAR(100),
-        resultCountry VARCHAR(100)
-    );
+        userID INTEGER AUTO_INCREMENT,
+        userAge REAL, userGender TEXT, 
+        userNumberOfApps INTEGER, 
+        userSocialMediaUsage REAL, 
+        userPercentOfSocialMedia REAL, 
+        userProductivityAppUsage REAL, 
+        userPercentOfProductivityAppUsage REAL, 
+        userGamingAppUsage REAL, 
+        userPercentOfGamingAppUsage REAL, 
+        userTotalAppUsage REAL, 
+        userCity TEXT, 
+        resultState TEXT, 
+        resultCountry TEXT, 
+        PRIMARY KEY (userID)
+    )
     """
     cursor.execute(create_table_sql)
     connection.commit()
 
-    BATCHSIZE = 1000;
     # Insert data
     insert_sql = """
     INSERT INTO data (
@@ -59,14 +56,8 @@ def lambda_handler(event, context):
 
     with open(tmp_file, 'r') as csvfile:
         reader = csv.reader(csvfile)
-        next(reader, None)  # Skip header
         rows = [tuple(row) for row in reader]
-
-        # Process rows in batches
-        for i in range(0, len(rows), BATCHSIZE):
-            batch = rows[i:i + BATCHSIZE]
-            cursor.executemany(insert_sql, batch)
-            connection.commit()  # Commit after each batch
+        cursor.executemany(insert_sql, rows)
 
     connection.commit()
 

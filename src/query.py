@@ -1,15 +1,15 @@
 import json
-import pymysql
+import mysql.connector
 
 def lambda_handler(event, context):
-    db_config = {
-        "host": "your-db-host",
-        "user": "your-username",
-        "password": "your-password",
-        "database": "mobiledata"
-    }
+    connection = mysql.connector.connect(
+        host="tql-db.cluster-c5oescyqc3zg.us-east-1.rds.amazonaws.com", 
+        port=3306,
+        user="admin",
+        password="smLe14KRN9X7SoT3Y36V",
+        database="mobiledata"
+    )
 
-    connection = pymysql.connect(**db_config)
     cursor = connection.cursor()
 
     query = "SELECT "
@@ -32,4 +32,14 @@ def lambda_handler(event, context):
     cursor.execute(query, values)
 
     result = cursor.fetchall()
-    return json.dumps(result, default=str)
+    columns = [desc[0] for desc in cursor.description]
+
+    # Create the desired JSON format
+    entries = []
+    for row in result:
+        entry = {}
+        for i, column in enumerate(columns):
+            entry[column] = row[i]
+        entries.append(entry)
+
+    return json.dumps({"entries": entries}, default=str)

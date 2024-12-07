@@ -45,8 +45,8 @@ class Inspector:
 
 # Constants
 API_KEY = os.environ.get('OPENCAGE_API_KEY', 'e6bc8eff15f74c6d928a897a0264635f')
-PUT_BUCKET = "load.tlq"
-RECURRING_CITIES_BUCKET = "recurring-cities.tlq"
+PUT_BUCKET = "python-load.tlq"
+RECURRING_CITIES_BUCKET = "python-recurring-cities.tlq"
 RECURRING_CITIES_FILENAME = "recurring-cities"
 
 
@@ -115,6 +115,11 @@ def lambda_handler(event: Dict[str, Any], context: Any):
 
         # Load recurring cities cache
         recurring_cities = {}
+        if s3.list_objects_v2(Bucket=RECURRING_CITIES_BUCKET, Prefix=RECURRING_CITIES_FILENAME).get('KeyCount', 0):
+            s3.download_file(RECURRING_CITIES_BUCKET, RECURRING_CITIES_FILENAME, '/tmp/' + RECURRING_CITIES_FILENAME)
+            with open('/tmp/' + RECURRING_CITIES_FILENAME, 'rb') as f:
+                recurring_cities = pickle.load(f)
+                print(recurring_cities)
 
         # Transform data
         with open(tmp_file, 'r') as infile, open(transformed_file, 'w', newline='') as outfile:
