@@ -18,6 +18,7 @@ def lambda_handler(event, context):
 
     if group_by:
         query += ", ".join(group_by)
+        query += ", "
 
     if aggregations:
         query += ", ".join([f"{agg['function']}({agg['column']}) AS {agg['function']}_{agg['column']}" for agg in aggregations])
@@ -34,6 +35,7 @@ def lambda_handler(event, context):
         query += " GROUP BY " + ", ".join(group_by)
 
     values = [f["value"] for f in filters]
+    print(query)
     cursor.execute(query, values)
 
     result = cursor.fetchall()
