@@ -58,7 +58,8 @@ def lambda_handler(event: Dict[str, Any], context: Any):
     """Main Lambda function handler"""
     # Initialize performance inspector
     inspector = Inspector()
-    # inspector.inspectAll()
+    inspector.inspectCPU()
+    inspector.inspectMemory()
 
     # Add custom attributes based on event
     if event and 'detail' in event and 'requestParameters' in event['detail']:
