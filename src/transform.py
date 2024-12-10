@@ -6,42 +6,8 @@ import os
 import time
 import json
 import logging
+from saaf.Inspector import Inspector
 from typing import Dict, Any
-
-
-class Inspector:
-    def __init__(self):
-        self._start_time = time.time()
-        self._attributes = {}
-        self._initial_metrics = {}
-        self._final_metrics = {}
-
-    def inspectAll(self):
-        """Capture initial system metrics"""
-        # You can add more detailed system inspection logic here
-        self._initial_metrics = {
-            'start_time': self._start_time,
-        }
-
-    def addAttribute(self, key: str, value: Any):
-        """Add a custom attribute to the inspection report"""
-        self._attributes[key] = value
-
-    def inspectAllDeltas(self):
-        """Capture final system metrics and calculate deltas"""
-        self._final_metrics = {
-            'end_time': time.time(),
-            'execution_time': time.time() - self._start_time
-        }
-
-    def finish(self):
-        """Compile and return the inspection report"""
-        return {
-            'attributes': self._attributes,
-            'initial_metrics': self._initial_metrics,
-            'final_metrics': self._final_metrics
-        }
-
 
 # Constants
 API_KEY = os.environ.get('OPENCAGE_API_KEY', 'e6bc8eff15f74c6d928a897a0264635f')
@@ -92,7 +58,7 @@ def lambda_handler(event: Dict[str, Any], context: Any):
     """Main Lambda function handler"""
     # Initialize performance inspector
     inspector = Inspector()
-    inspector.inspectAll()
+    # inspector.inspectAll()
 
     # Add custom attributes based on event
     if event and 'detail' in event and 'requestParameters' in event['detail']:

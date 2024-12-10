@@ -2,7 +2,7 @@
 def yourFunction(request, context):
     import json
     import logging
-    from Inspector import Inspector
+    from saaf.Inspector import Inspector
     import time
     
     # Import the module and collect data 
