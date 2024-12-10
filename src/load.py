@@ -7,6 +7,7 @@ def lambda_handler(event, context):
     bucket_name = event['detail']['requestParameters']['bucketName']
     file_name = event['detail']['requestParameters']['key']
     tmp_file = f"/tmp/{file_name}"
+    BATCHSIZE = 1000
 
     # Download file from S3
     s3.download_file(bucket_name, file_name, tmp_file)
