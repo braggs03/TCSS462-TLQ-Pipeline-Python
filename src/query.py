@@ -13,8 +13,8 @@ def lambda_handler(event, context):
     connection = mysql.connector.connect(
         host="tql-db.cluster-c5oescyqc3zg.us-east-1.rds.amazonaws.com", 
         port=3306,
-        user="admin",
-        password="smLe14KRN9X7SoT3Y36V",
+        user="USERNAME",
+        password="PASSWORD",
         database="mobiledata"
     )
 
