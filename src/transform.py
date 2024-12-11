@@ -6,15 +6,17 @@ import os
 import time
 import json
 import logging
-from saaf.Inspector import Inspector
 from typing import Dict, Any
+import random
+from Inspector import Inspector
+
 
 # Constants
 API_KEY = os.environ.get('OPENCAGE_API_KEY', 'e6bc8eff15f74c6d928a897a0264635f')
 PUT_BUCKET = "python-load.tlq"
 RECURRING_CITIES_BUCKET = "python-recurring-cities.tlq"
 RECURRING_CITIES_FILENAME = "recurring-cities"
-
+DATA_BUCKET = "tlq-experiment-transform"
 
 def transform_row(record: list, recurring_cities: Dict[str, tuple]) -> list:
     """Transform a single row of data"""
@@ -45,6 +47,7 @@ def transform_row(record: list, recurring_cities: Dict[str, tuple]) -> list:
         except Exception as e:
             logging.error(f"Geocoding error for city {user_city}: {e}")
             result_state, result_country = 'N/A', 'N/A'
+            recurring_cities[user_city] = (result_state, result_country)
 
     return [
         user_age, user_gender, user_number_of_apps, social_media_usage,
@@ -57,9 +60,11 @@ def transform_row(record: list, recurring_cities: Dict[str, tuple]) -> list:
 def lambda_handler(event: Dict[str, Any], context: Any):
     """Main Lambda function handler"""
     # Initialize performance inspector
+    
     inspector = Inspector()
     inspector.inspectCPU()
     inspector.inspectMemory()
+    inspector.inspectContainer()
 
     # Add custom attributes based on event
     if event and 'detail' in event and 'requestParameters' in event['detail']:
@@ -102,15 +107,21 @@ def lambda_handler(event: Dict[str, Any], context: Any):
         # Upload transformed file
         s3.upload_file(transformed_file, PUT_BUCKET, f"transformed_{file_name}")
 
+        s3.delete_object(Bucket=bucket_name, Key=file_name)
+
         # Save recurring cities
         with open('/tmp/' + RECURRING_CITIES_FILENAME, 'wb') as f:
             pickle.dump(recurring_cities, f)
         s3.upload_file('/tmp/' + RECURRING_CITIES_FILENAME, RECURRING_CITIES_BUCKET, RECURRING_CITIES_FILENAME)
 
         # Final inspection
-        inspector.addAttribute("status", "success")
-        inspector.addAttribute("transformed_file", f"transformed_{file_name}")
         inspector.inspectAllDeltas()
+
+        filename = '/tmp/result' + str(round(time.time() * 1000)) + str(random.randint(1, 10000)) + '.json'
+        with open(filename, 'w') as fp:
+            json.dump(inspector.finish(), fp)
+
+        s3.upload_file(filename, DATA_BUCKET, filename)
 
         return inspector.finish()
 

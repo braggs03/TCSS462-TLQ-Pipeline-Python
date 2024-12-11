@@ -1,7 +1,15 @@
 import json
 import mysql.connector
+from Inspector import Inspector
 
 def lambda_handler(event, context):
+
+
+    inspector = Inspector()
+    inspector.inspectCPU()
+    inspector.inspectMemory()
+    inspector.inspectContainer()
+
     connection = mysql.connector.connect(
         host="tql-db.cluster-c5oescyqc3zg.us-east-1.rds.amazonaws.com", 
         port=3306,
@@ -49,4 +57,8 @@ def lambda_handler(event, context):
             entry[column] = row[i]
         entries.append(entry)
 
-    return json.dumps({"entries": entries}, default=str)
+    inspector.addAttribute('entries', entries)
+
+    inspector.inspectAllDeltas()
+
+    return inspector.finish()
